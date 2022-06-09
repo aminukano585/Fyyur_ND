@@ -111,6 +111,14 @@ def format_datetime(value, format='medium'):
 app.jinja_env.filters['datetime'] = format_datetime
 
 #----------------------------------------------------------------------------#
+# Utilities
+#----------------------------------------------------------------------------#
+
+def get_upcoming_shows(shows):
+  filtered_shows = list(filter(lambda s: s['start_time'] > datetime.now(), shows))
+  return len(filtered_shows)
+
+#----------------------------------------------------------------------------#
 # Controllers.
 #----------------------------------------------------------------------------#
 
@@ -124,30 +132,37 @@ def index():
 
 @app.route('/venues')
 def venues():
-  # TODO: replace with real venues data.
-  #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-  data=[{
-    "city": "San Francisco",
-    "state": "CA",
-    "venues": [{
-      "id": 1,
-      "name": "The Musical Hop",
-      "num_upcoming_shows": 0,
-    }, {
-      "id": 3,
-      "name": "Park Square Live Music & Coffee",
-      "num_upcoming_shows": 1,
-    }]
-  }, {
-    "city": "New York",
-    "state": "NY",
-    "venues": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }]
-  return render_template('pages/venues.html', areas=data);
+  # DONE: replace with real venues data.
+  # num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
+  data = []
+  res = Venue.query.all()
+  venues = [x.__dict__ for x in res]
+
+  for venue in venues:
+    if venue['state'] in [v['state'] for v in data]:
+      add_venue = {
+        'id': venue['id'],
+        'name': venue['name'],
+        'num_upcoming_shows': get_upcoming_shows([x.__dict__ for x in venue['shows']])
+      }
+
+      for idx, x in enumerate(data):
+        if x['state'] == venue['state']:
+          data[idx]['venues'].append(add_venue)
+      
+    else:
+      add_state = {
+        'city': venue['city'],
+        'state': venue['state'],
+        'venues': [{
+          'id': venue['id'],
+          'name': venue['name'],
+          'num_upcoming_shows': get_upcoming_shows([x.__dict__ for x in venue['shows']])
+        }]
+      }
+      data.append(add_state)
+  print(data)
+  return render_template('pages/venues.html', areas=data)
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
