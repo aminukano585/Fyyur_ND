@@ -114,9 +114,6 @@ def format_datetime(value, format='medium'):
 
 app.jinja_env.filters['datetime'] = format_datetime
 
-#----------------------------------------------------------------------------#
-# Utilities
-#----------------------------------------------------------------------------#
 
 def get_upcoming_shows(shows):
   filtered_shows = list(filter(lambda s: s['start_time'] > datetime.now(), shows))
@@ -170,18 +167,31 @@ def venues():
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
-  # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
+  # DONE: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for Hop should return "The Musical Hop".
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
-  response={
-    "count": 1,
-    "data": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }
-  return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
+  response = {}
+  data = []
+  search_term = request.form.get('search_term', '')
+
+  res = Venue.query.filter(
+    Venue.name.ilike(f'%{search_term}%') |
+    Venue.city.ilike(f'%{search_term}%') |
+    Venue.state.ilike(f'%{search_term}%')
+  ).all()
+
+  venues = [x.__dict__ for x in res]
+
+  for venue in venues:
+    data.append({
+      'id': venue['id'],
+      'name': venue['name'],
+      'num_upcoming_shows': get_upcoming_shows([x.__dict__ for x in venue['shows']]) 
+    })
+
+  response['count'], response['data'] = len(data), data
+
+  return render_template('pages/search_venues.html', results=response, search_term=search_term)
 
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
