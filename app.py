@@ -45,40 +45,50 @@ def format_datetime(value, format='medium'):
 app.jinja_env.filters['datetime'] = format_datetime
 
 
-def get_upcoming_shows(shows):
-  filtered_shows = list(filter(lambda s: s.start_time > datetime.now(), shows))
-  data = []
+def get_upcoming_shows(id, search):
+  if search == 'venue':
+    upcoming_shows_query = db.session.query(Show).join(Venue).filter(Show.venue_id == id).filter(Show.start_time > datetime.now()).all()
 
-  for filtered_show in filtered_shows:
-    data.append({
-      'venue_id': filtered_show.venues.id,
-      'venue_name': filtered_show.venues.name,
-      'venue_image_link': filtered_show.venues.image_link,
-      'artist_id': filtered_show.artists.id,
-      'artist_name': filtered_show.artists.name,
-      'artist_image_link': filtered_show.artists.image_link,
-      'start_time': format_datetime(filtered_show.start_time)
+  if search == 'artist':
+    upcoming_shows_query = db.session.query(Show).join(Artist).filter(Show.artist_id == id).filter(Show.start_time > datetime.now()).all()
+
+  upcoming_shows = []
+
+  for show in upcoming_shows_query:
+    upcoming_shows.append({
+      'venue_id': show.venues.id,
+      'venue_name': show.venues.name,
+      'venue_image_link': show.venues.image_link,
+      'artist_id': show.artists.id,
+      'artist_name': show.artists.name,
+      'artist_image_link': show.artists.image_link,
+      'start_time': format_datetime(show.start_time)
     })
 
-  return data
+  return upcoming_shows
 
 
-def get_past_shows(shows):
-  filtered_shows = list(filter(lambda s: s.start_time < datetime.now(), shows))
-  data = []
+def get_past_shows(id, search):
+  if search == 'venue':
+    past_shows_query = db.session.query(Show).join(Venue).filter(Show.venue_id == id).filter(Show.start_time < datetime.now()).all()
 
-  for filtered_show in filtered_shows:
-    data.append({
-      'venue_id': filtered_show.venues.id,
-      'venue_name': filtered_show.venues.name,
-      'venue_image_link': filtered_show.venues.image_link,
-      'artist_id': filtered_show.artists.id,
-      'artist_name': filtered_show.artists.name,
-      'artist_image_link': filtered_show.artists.image_link,
-      'start_time': format_datetime(filtered_show.start_time)
+  if search == 'artist':
+    past_shows_query = db.session.query(Show).join(Artist).filter(Show.artist_id == id).filter(Show.start_time < datetime.now()).all()
+
+  past_shows = []
+
+  for show in past_shows_query:
+    past_shows.append({
+      'venue_id': show.venues.id,
+      'venue_name': show.venues.name,
+      'venue_image_link': show.venues.image_link,
+      'artist_id': show.artists.id,
+      'artist_name': show.artists.name,
+      'artist_image_link': show.artists.image_link,
+      'start_time': format_datetime(show.start_time)
     })
 
-  return data
+  return past_shows
 
 #----------------------------------------------------------------------------#
 # Controllers.
@@ -105,7 +115,7 @@ def venues():
       add_venue = {
         'id': venue['id'],
         'name': venue['name'],
-        'num_upcoming_shows': len(get_upcoming_shows(venue['shows']))
+        'num_upcoming_shows': len(get_upcoming_shows(venue['id'], 'venue'))
       }
 
       for idx, x in enumerate(data):
@@ -119,7 +129,7 @@ def venues():
         'venues': [{
           'id': venue['id'],
           'name': venue['name'],
-          'num_upcoming_shows': len(get_upcoming_shows(venue['shows']))
+          'num_upcoming_shows': len(get_upcoming_shows(venue['id'], 'venue'))
         }]
       }
       data.append(add_state)
@@ -147,7 +157,7 @@ def search_venues():
     data.append({
       'id': venue['id'],
       'name': venue['name'],
-      'num_upcoming_shows': len(get_upcoming_shows(venue['shows'])) 
+      'num_upcoming_shows': len(get_upcoming_shows(venue['id'], 'venue')) 
     })
 
   response['count'], response['data'] = len(data), data
@@ -173,10 +183,10 @@ def show_venue(venue_id):
     'seeking_talent': venue.seeking_talent,
     'seeking_description': venue.seeking_description,
     'image_link': venue.image_link,
-    'past_shows': get_past_shows(venue.shows),
-    'upcoming_shows': get_upcoming_shows(venue.shows),
-    'past_shows_count': len(get_past_shows(venue.shows)),
-    'upcoming_shows_count': len(get_upcoming_shows(venue.shows)),
+    'past_shows': get_past_shows(venue.id, 'venue'),
+    'upcoming_shows': get_upcoming_shows(venue.id, 'venue'),
+    'past_shows_count': len(get_past_shows(venue.id, 'venue')),
+    'upcoming_shows_count': len(get_upcoming_shows(venue.id, 'venue'))
   }
 
   return render_template('pages/show_venue.html', venue=data)
@@ -292,7 +302,7 @@ def search_artists():
     data.append({
       'id': artist['id'],
       'name': artist['name'],
-      'num_upcoming_shows': len(get_upcoming_shows(artist['shows'])) 
+      'num_upcoming_shows': len(get_upcoming_shows(artist['id'], 'artist')) 
     })
 
   response['count'], response['data'] = len(data), data
@@ -319,10 +329,10 @@ def show_artist(artist_id):
     'seeking_venue': artist.seeking_venue,
     'seeking_description': artist.seeking_description,
     'image_link': artist.image_link,
-    'past_shows': get_past_shows(artist.shows),
-    'upcoming_shows': get_upcoming_shows(artist.shows),
-    'past_shows_count': len(get_past_shows(artist.shows)),
-    'upcoming_shows_count': len(get_upcoming_shows(artist.shows)),
+    'past_shows': get_past_shows(artist.id, 'artist'),
+    'upcoming_shows': get_upcoming_shows(artist.id, 'artist'),
+    'past_shows_count': len(get_past_shows(artist.id, 'artist')),
+    'upcoming_shows_count': len(get_upcoming_shows(artist.id, 'artist'))
   }
 
   return render_template('pages/show_artist.html', artist=data)
