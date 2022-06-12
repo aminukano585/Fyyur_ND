@@ -45,6 +45,11 @@ def format_datetime(value, format='medium'):
 app.jinja_env.filters['datetime'] = format_datetime
 
 
+def handle_form_errors(errors):
+  for field, message in errors.items():
+    flash(field + ' - ' + str(message), 'danger')
+
+
 def get_upcoming_shows(id, search):
   if search == 'venue':
     upcoming_shows_query = db.session.query(Show).join(Venue).filter(Show.venue_id == id).filter(Show.start_time > datetime.now()).all()
@@ -234,7 +239,7 @@ def create_venue_submission():
       db.session.close()
 
   else:
-    flash('Invalid submission!')
+    handle_form_errors(form.errors)
     print(form.errors)
 
   # on successful db insert, flash success
@@ -382,7 +387,7 @@ def edit_artist_submission(artist_id):
       db.session.close()
 
   else:
-    flash('Invalid submission!')
+    handle_form_errors(form.errors)
     print(form.errors)
 
   return redirect(url_for('show_artist', artist_id=artist_id))
@@ -430,7 +435,7 @@ def edit_venue_submission(venue_id):
       db.session.close()
 
   else:
-    flash('Invalid submission!')
+    handle_form_errors(form.errors)
     print(form.errors)
 
   return redirect(url_for('show_venue', venue_id=venue_id))
@@ -478,7 +483,7 @@ def create_artist_submission():
       db.session.close()
 
   else:
-    flash('Invalid submission!')
+    handle_form_errors(form.errors)
     print(form.errors)
 
   # on successful db insert, flash success
@@ -543,7 +548,7 @@ def create_show_submission():
       db.session.close()
 
   else:
-    flash('Invalid submission!')
+    handle_form_errors(form.errors)
     print(form.errors)
 
   # on successful db insert, flash success
